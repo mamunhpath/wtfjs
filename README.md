@@ -89,12 +89,14 @@ Currently, there are these translations of **wtfjs**:
   - [Arrow functions can not be a constructor](#arrow-functions-can-not-be-a-constructor)
   - [`arguments` and arrow functions](#arguments-and-arrow-functions)
   - [Tricky return](#tricky-return)
+  - [Chaining assignments on object](#chaining-assignments-on-object)
   - [Accessing object properties with arrays](#accessing-object-properties-with-arrays)
   - [Null and Relational Operators](#null-and-relational-operators)
   - [`Number.toFixed()` display different numbers](#numbertofixed-display-different-numbers)
   - [`Math.max()` less than `Math.min()`](#mathmax-less-than-mathmin)
   - [Comparing `null` to `0`](#comparing-null-to-0)
   - [Same variable redeclaration](#same-variable-redeclaration)
+  - [Default behavior Array.prototype.sort()](#default-behavior-arrayprototypesort)
 - [Other resources](#other-resources)
 - [🎓 License](#-license)
 
@@ -246,7 +248,7 @@ false == "false"; // -> false
 ## baNaNa
 
 ```js
-"b" + "a" + +"a" + "a";
+"b" + "a" + +"a" + "a"; // -> 'baNaNa'
 ```
 
 This is an old-school joke in JavaScript, but remastered. Here's the original one:
@@ -1448,7 +1450,7 @@ f("a");
 
 ```js
 (function() {
-  return;
+  return
   {
     b: 10;
   }
@@ -1471,6 +1473,38 @@ This is because of a concept called Automatic Semicolon Insertion, which automag
 
 - [**11.9.1** Rules of Automatic Semicolon Insertion](https://www.ecma-international.org/ecma-262/#sec-rules-of-automatic-semicolon-insertion)
 - [**13.10** The `return` Statement](https://www.ecma-international.org/ecma-262/#sec-return-statement)
+
+## Chaining assignments on object
+
+```js
+var foo = {n: 1};
+var bar = foo;
+
+foo.x = foo = {n: 2};
+
+foo.x // -> undefined
+foo   // -> {n: 2}
+bar   // -> {n: 1, x: {n: 2}}
+```
+
+From right to left, `{n: 2}` is assigned to foo, and the result of this assignment `{n: 2}` is assigned to foo.x, that's why bar is `{n: 1, x: {n: 2}}` as bar is a reference to foo. But why foo.x is undefined while bar.x is not ?
+
+### 💡 Explanation:
+
+Foo and bar references the same object `{n: 1}`, and lvalues are resolved before assignations. `foo = {n: 2}` is creating a new object, and so foo is updated to reference that new object. The trick here is foo in `foo.x = ...` as a lvalue was resolved beforehand and still reference the old `foo = {n: 1}` object and update it by adding the x value. After that chain assignments, bar still reference the old foo object, but foo reference the new `{n: 2}` object, where x is not existing.
+
+It's equivalent to:
+
+```js
+var foo = {n: 1};
+var bar = foo;
+
+foo = {n: 2} // -> {n: 2}
+bar.x = foo // -> {n: 1, x: {n: 2}}
+// bar.x point to the address of the new foo object
+// it's not equivalent to: bar.x = {n: 2}
+```
+
 
 ## Accessing object properties with arrays
 
@@ -1646,6 +1680,28 @@ var a;
 All defenitions are merged into one definition.
 
 - [**13.3.2** Variable Statement](https://www.ecma-international.org/ecma-262/#sec-variable-statement)
+
+## Default behavior Array.prototype.sort()
+
+Imagine that you need to sort an array of numbers.
+
+```
+[ 10, 1, 3 ].sort() // -> [ 1, 10, 3 ]
+```
+
+### 💡 Explanation:
+
+The default sort order is built upon converting the elements into strings, then comparing their sequences of UTF-16 code units values.
+
+- [**22.1.3.25** Array.prototype.sort ( comparefn )](https://www.ecma-international.org/ecma-262/#sec-array.prototype.sort)
+
+### Hint
+
+Pass `comparefn` if you try to sort anything but string.
+
+```
+[ 10, 1, 3 ].sort((a, b) => a - b) // -> [ 1, 3, 10 ]
+```
 
 # 📚 Other resources
 
